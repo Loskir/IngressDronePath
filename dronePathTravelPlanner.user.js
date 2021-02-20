@@ -967,6 +967,16 @@ function wrapper(plugin_info) {
 		}
 	};
 
+	function drawGrid(cellsToDraw) {
+		drawnCells = cellsToDraw;
+		Object.values(cellsToDraw).forEach(function (cell){
+			dGridLayerGroup.addLayer(drawCell(cell, settings.gridColor, settings.gridWidth));
+		});
+		if (!droneLayer.hasLayer(dGridLayerGroup)) {
+			droneLayer.addLayer(dGridLayerGroup);
+		}
+	}
+
 
 	function updateMapGrid(gridSize) {
 		if (!portalDroneIndicator) {
@@ -977,14 +987,8 @@ function wrapper(plugin_info) {
 
 		if (zoom > 8) {
 			const cellsToDraw = determineCellGridInRange(portalDroneIndicator.getLatLng(), gridSize);
-			drawnCells = cellsToDraw;
-			Object.keys(cellsToDraw).forEach(function (key){
-				dGridLayerGroup.addLayer(drawCell(cellsToDraw[key], settings.gridColor, settings.gridWidth));
-			});
+			drawGrid(cellsToDraw)
 			highlightPortalsInRange();
-			if (!droneLayer.hasLayer(dGridLayerGroup)) {
-				droneLayer.addLayer(dGridLayerGroup);
-			}
 		}
 	}
 
