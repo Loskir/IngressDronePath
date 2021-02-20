@@ -937,34 +937,36 @@ function wrapper(plugin_info) {
 		portalDroneIndicatorKey = null;
 		dGridLayerGroup.clearLayers();
 
-		if (guid) {
-			if (guid.selectedPortalGuid) {
-				lastPortalGuid = guid;
+		if (!guid) {
+			return
+		}
 
-				const selectedPortal = window.portals[guid.selectedPortalGuid];
-				const calcMethod = calculationMethods[settings.calculationMethod];
-				if (selectedPortal) {
-					const coord = new LatLng(selectedPortal._latlng.lat, selectedPortal._latlng.lng);
-					portalDroneIndicator = L.circle(
-						coord,
-						calcMethod["radius"],
-						{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false }
-					)
-					dGridLayerGroup.addLayer(portalDroneIndicator);
-					console.log(settings.keyRange);
-					if (settings.keyRange) {
-						portalDroneIndicatorKey = L.circle(coord, Number(settings.keyRangeDist),
-						{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false });
-						dGridLayerGroup.addLayer(portalDroneIndicatorKey);
-					}
-				}
-				updateMapGrid(calcMethod["gridSize"]);
-			} else {
-				if (droneLayer.hasLayer(dGridLayerGroup)) {
-					droneLayer.removeLayer(dGridLayerGroup);
-				}
+		if (!guid.selectedPortalGuid) {
+			if (droneLayer.hasLayer(dGridLayerGroup)) {
+				droneLayer.removeLayer(dGridLayerGroup);
 			}
 		}
+
+		lastPortalGuid = guid;
+
+		const selectedPortal = window.portals[guid.selectedPortalGuid];
+		const calcMethod = calculationMethods[settings.calculationMethod];
+		if (selectedPortal) {
+			const coord = new LatLng(selectedPortal._latlng.lat, selectedPortal._latlng.lng);
+			portalDroneIndicator = L.circle(
+				coord,
+				calcMethod["radius"],
+				{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false }
+			)
+			dGridLayerGroup.addLayer(portalDroneIndicator);
+			console.log(settings.keyRange);
+			if (settings.keyRange) {
+				portalDroneIndicatorKey = L.circle(coord, Number(settings.keyRangeDist),
+				{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false });
+				dGridLayerGroup.addLayer(portalDroneIndicatorKey);
+			}
+		}
+		updateMapGrid(calcMethod["gridSize"]);
 	};
 
 	function drawGrid(cellsToDraw) {
