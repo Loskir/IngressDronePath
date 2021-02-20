@@ -983,7 +983,7 @@ function wrapper(plugin_info) {
 
 	function updateMapGrid(centerLatLng, gridSize, radius) {
 		const cellsInRange = determineCellGridInRange(centerLatLng, gridSize, radius);
-		const portalsInRange = getPortalsInRange(gridSize, cellsInRange)
+		const portalsInRange = getPortalsInRange(cellsInRange, gridSize)
 		drawGrid(cellsInRange)
 		highlightPortalsInRange(portalsInRange);
 		if (settings.showOneWay) {
@@ -1029,7 +1029,7 @@ function wrapper(plugin_info) {
 		return region;
 	}
 
-	function getPortalsInRange(gridSize, cellsInRange) {
+	function getPortalsInRange(cellsInRange, gridSize) {
 		return Object.values(window.portals).filter(function (portal){
 			const portalLatLng = L.latLng(portal._latlng.lat, portal._latlng.lng);
 			const portalCell = S2.S2Cell.FromLatLng(getLatLngPoint(portalLatLng), gridSize);
