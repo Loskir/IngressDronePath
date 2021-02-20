@@ -71,8 +71,7 @@ function wrapper(plugin_info) {
 	let lastPortalGuid = null;
 
 	map = window.map;
-	calculationMethods =
-	{
+	const calculationMethods = {
 		"500/16": {"radius": 500, "gridSize": 16},
 		"570/17": {"radius": 570, "gridSize": 17}
 	}
