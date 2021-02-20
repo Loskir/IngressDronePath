@@ -70,8 +70,6 @@ function wrapper(plugin_info) {
 	let routeLayers = {};
 	let lastPortalGuid = null;
 
-	let drawnCells = {};
-
 	map = window.map;
 	calculationMethods =
 	{
@@ -965,12 +963,16 @@ function wrapper(plugin_info) {
 				{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false });
 				dGridLayerGroup.addLayer(portalDroneIndicatorKey);
 			}
+
+			const zoom = map.getZoom();
+
+			if (zoom > 8) {
+				return updateMapGrid(coord, calcMethod.gridSize)
+			}
 		}
-		updateMapGrid(calcMethod["gridSize"]);
 	};
 
 	function drawGrid(cellsToDraw) {
-		drawnCells = cellsToDraw;
 		Object.values(cellsToDraw).forEach(function (cell){
 			dGridLayerGroup.addLayer(drawCell(cell, settings.gridColor, settings.gridWidth));
 		});
@@ -979,18 +981,13 @@ function wrapper(plugin_info) {
 		}
 	}
 
-
-	function updateMapGrid(gridSize) {
-		if (!portalDroneIndicator) {
-			return;
-		}
-
-		const zoom = map.getZoom();
-
-		if (zoom > 8) {
-			const cellsToDraw = determineCellGridInRange(portalDroneIndicator.getLatLng(), gridSize);
-			drawGrid(cellsToDraw)
-			highlightPortalsInRange();
+	function updateMapGrid(centerLatLng, gridSize) {
+		const cellsInRange = determineCellGridInRange(centerLatLng, gridSize);
+		const portalsInRange = getPortalsInRange(gridSize, cellsInRange)
+		drawGrid(cellsInRange)
+		highlightPortalsInRange(portalsInRange);
+		if (settings.showOneWay) {
+			highlightOneWayJumps(centerLatLng, portalsInRange, gridSize, calculationMethods[settings.calculationMethod]["radius"]);
 		}
 	}
 
@@ -1032,47 +1029,49 @@ function wrapper(plugin_info) {
 		return region;
 	}
 
-	function highlightPortalsInRange() {
+	function getPortalsInRange(gridSize, cellsInRange) {
+		return Object.values(window.portals).filter(function (portal){
+			const portalLatLng = L.latLng(portal._latlng.lat, portal._latlng.lng);
+			const portalCell = S2.S2Cell.FromLatLng(getLatLngPoint(portalLatLng), gridSize);
+			return portalCell.toString() in cellsInRange
+		});
+	}
+
+	function highlightPortalsInRange(portalsInRange) {
 		const scale = portalMarkerScale();
 		//	 portal level		 0	1  2  3  4	5  6  7  8
 		const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4];
 		const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9,10,11];
-		let portalsInRange = [];
 
-		Object.keys(window.portals).forEach(function (key){
-			const portal = window.portals[key];
+		portalsInRange.forEach(function (portal){
 			const portalLatLng = L.latLng(portal._latlng.lat, portal._latlng.lng);
-			const portalCell = S2.S2Cell.FromLatLng(getLatLngPoint(portalLatLng), calculationMethods[settings.calculationMethod]["gridSize"]);
-			if (portalCell.toString() in drawnCells) {
-				portalsInRange.push(portal);
-				const level = Math.floor(portal["options"]["level"]||0);
-				const lvlWeight = LEVEL_TO_WEIGHT[level] * Math.sqrt(scale) + 1;
-				const lvlRadius = LEVEL_TO_RADIUS[level] * scale + 2;
-				dGridLayerGroup.addLayer(
-					L.circleMarker(
-						portalLatLng,
-						{ radius: lvlRadius, fill: true, color: settings.portalHighlight, weight: lvlWeight, interactive: false, clickable: false }
-					)
-				);
-			}
+			const level = Math.floor(portal["options"]["level"]||0);
+			const lvlWeight = LEVEL_TO_WEIGHT[level] * Math.sqrt(scale) + 1;
+			const lvlRadius = LEVEL_TO_RADIUS[level] * scale + 2;
+			dGridLayerGroup.addLayer(
+				L.circleMarker(
+					portalLatLng,
+					{ radius: lvlRadius, fill: true, color: settings.portalHighlight, weight: lvlWeight, interactive: false, clickable: false }
+				)
+			);
 		});
-		drawnCells = {};
-		if (settings.showOneWay) {
-			highlightOneWayJumps(portalsInRange);
+	}
+
+	function isOneWayJump(centerPoint, centerPointCell, toPortalPoint, gridSize, radius) {
+		if (haversine(toPortalPoint.lat, toPortalPoint.lng, centerPoint.lat, centerPoint.lng) > radius) {
+			const cellRange = determineCellGridInRange(toPortalPoint, gridSize);
+			return !(centerPointCell.toString() in cellRange)
 		}
 	}
 
-	function highlightOneWayJumps(portalsInRange) {
-		const circlePoint = portalDroneIndicator.getLatLng();
-		const centerPointCell = S2.S2Cell.FromLatLng(getLatLngPoint(circlePoint), calculationMethods[settings.calculationMethod]["gridSize"]);
+	function highlightOneWayJumps(centerLatLng, portalsInRange, gridSize, radius) {
+		const centerPoint = centerLatLng;
+		const centerPointCell = S2.S2Cell.FromLatLng(getLatLngPoint(centerPoint), gridSize);
 
-		portalsInRange.forEach(portal => {
+		portalsInRange.forEach((portal) => {
 			const portalPoint = new LatLng(portal._latlng.lat, portal._latlng.lng);
-			if (haversine(portalPoint.lat, portalPoint.lng, circlePoint.lat, circlePoint.lng) > calculationMethods[settings.calculationMethod]["radius"]) {
-				const cellRange = determineCellGridInRange(portalPoint, calculationMethods[settings.calculationMethod]["gridSize"]);
-				if (!(centerPointCell.toString() in cellRange)) {
-					dGridLayerGroup.addLayer(L.circleMarker(portalPoint, { radius: 15, fill: true, color: 'red', weight: 5, interactive: false, clickable: false }));
-				}
+			if (isOneWayJump(centerPoint, centerPointCell, portalPoint, gridSize, radius)) {
+				dGridLayerGroup.addLayer(L.circleMarker(portalPoint, { radius: 15, fill: true, color: 'red', weight: 5, interactive: false, clickable: false }));
 			}
 		});
 	}
