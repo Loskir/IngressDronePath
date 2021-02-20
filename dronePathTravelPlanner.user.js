@@ -125,7 +125,7 @@ function wrapper(plugin_info) {
 		}
 		if (!settings.keyRangeDist) {
 			settings.keyRangeDist = "1250";
-		} 
+		}
 	}
 
 	window.resetSettings = function() {
@@ -162,8 +162,6 @@ function wrapper(plugin_info) {
 
 			return [Math.cos(theta) * cosphi, Math.sin(theta) * cosphi, Math.sin(phi)];
 		}
-
-
 
 		function XYZToLatLng(xyz) {
 			const lat = Math.atan2(xyz[2], Math.sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1]));
@@ -1139,7 +1137,8 @@ function wrapper(plugin_info) {
 		return result;
 	}
 
-	/* @class LatLng
+	/**
+	 * @class LatLng
 	 * @aka L.LatLng
 	 *
 	 * Represents a geographical point with a certain latitude and longitude.
