@@ -967,7 +967,7 @@ function wrapper(plugin_info) {
 			const zoom = map.getZoom();
 
 			if (zoom > 8) {
-				return updateMapGrid(coord, calcMethod.gridSize)
+				return updateMapGrid(coord, calcMethod.gridSize, calcMethod.radius)
 			}
 		}
 	};
@@ -981,17 +981,17 @@ function wrapper(plugin_info) {
 		}
 	}
 
-	function updateMapGrid(centerLatLng, gridSize) {
-		const cellsInRange = determineCellGridInRange(centerLatLng, gridSize);
+	function updateMapGrid(centerLatLng, gridSize, radius) {
+		const cellsInRange = determineCellGridInRange(centerLatLng, gridSize, radius);
 		const portalsInRange = getPortalsInRange(gridSize, cellsInRange)
 		drawGrid(cellsInRange)
 		highlightPortalsInRange(portalsInRange);
 		if (settings.showOneWay) {
-			highlightOneWayJumps(centerLatLng, portalsInRange, gridSize, calculationMethods[settings.calculationMethod]["radius"]);
+			highlightOneWayJumps(centerLatLng, portalsInRange, gridSize, radius);
 		}
 	}
 
-	function determineCellGridInRange(centerPoint, gridLevel) {
+	function determineCellGridInRange(centerPoint, gridLevel, radius) {
 		const seenCells = {};
 		const cellsToDraw = [];
 		const cellsInRange = {};
@@ -1006,7 +1006,7 @@ function wrapper(plugin_info) {
 
 			for (let n = 0; n < neighbors.length; n++) {
 				const nStr = neighbors[n].toString();
-				if (isCellInRange(neighbors[n], centerPoint)) {
+				if (isCellInRange(neighbors[n], centerPoint, radius)) {
 					if (!seenCells[nStr]) {
 						seenCells[nStr] = true;
 						cellsToDraw.push(neighbors[n]);
@@ -1059,7 +1059,7 @@ function wrapper(plugin_info) {
 
 	function isOneWayJump(centerPoint, centerPointCell, toPortalPoint, gridSize, radius) {
 		if (haversine(toPortalPoint.lat, toPortalPoint.lng, centerPoint.lat, centerPoint.lng) > radius) {
-			const cellRange = determineCellGridInRange(toPortalPoint, gridSize);
+			const cellRange = determineCellGridInRange(toPortalPoint, gridSize, radius);
 			return !(centerPointCell.toString() in cellRange)
 		}
 	}
@@ -1093,22 +1093,22 @@ function wrapper(plugin_info) {
 		return region;
 	}
 
-	function isCellInRange(cell, centerLatLng) {
+	function isCellInRange(cell, centerLatLng, radius) {
 		const corners = cell.getCornerLatLngs();
 		for (let i = 0; i < corners.length; i++) {
-			if (haversine(corners[i].lat, corners[i].lng, centerLatLng.lat, centerLatLng.lng) < calculationMethods[settings.calculationMethod]["radius"]) {
+			if (haversine(corners[i].lat, corners[i].lng, centerLatLng.lat, centerLatLng.lng) < radius) {
 				return true;
 			}
 		}
 		const midpoints = getCellFaceMidpointLatLngs(corners);
 		for (let i = 0; i < midpoints.length; i++) {
-			if (haversine(midpoints[i].lat, midpoints[i].lng, centerLatLng.lat, centerLatLng.lng) < calculationMethods[settings.calculationMethod]["radius"]) {
+			if (haversine(midpoints[i].lat, midpoints[i].lng, centerLatLng.lat, centerLatLng.lng) < radius) {
 				return true;
 			}
 		}
 		const quarterpoints = getCellFaceQuarterpointLatLngs(corners);
 		for (let i = 0; i < quarterpoints.length; i++) {
-			if (haversine(quarterpoints[i].lat, quarterpoints[i].lng, centerLatLng.lat, centerLatLng.lng) < calculationMethods[settings.calculationMethod]["radius"]) {
+			if (haversine(quarterpoints[i].lat, quarterpoints[i].lng, centerLatLng.lat, centerLatLng.lng) < radius) {
 				return true;
 			}
 		}
