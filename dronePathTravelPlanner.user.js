@@ -1042,7 +1042,7 @@ function wrapper(plugin_info) {
 		const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9,10,11];
 
 		portalsInRange.forEach(function (portal){
-			const portalLatLng = L.latLng(portal._latlng.lat, portal._latlng.lng);
+			const portalLatLng = portal.getLatLng();
 			const level = Math.floor(portal["options"]["level"]||0);
 			const lvlWeight = LEVEL_TO_WEIGHT[level] * Math.sqrt(scale) + 1;
 			const lvlRadius = LEVEL_TO_RADIUS[level] * scale + 2;
