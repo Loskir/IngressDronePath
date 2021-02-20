@@ -1065,7 +1065,6 @@ function wrapper(plugin_info) {
 	function highlightOneWayJumps(portalsInRange) {
 		const circlePoint = portalDroneIndicator.getLatLng();
 		const centerPointCell = S2.S2Cell.FromLatLng(getLatLngPoint(circlePoint), calculationMethods[settings.calculationMethod]["gridSize"]);
-		const searchLatLng = L.latLng(47.481489,-122.196868);
 
 		portalsInRange.forEach(portal => {
 			const portalPoint = new LatLng(portal._latlng.lat, portal._latlng.lng);
