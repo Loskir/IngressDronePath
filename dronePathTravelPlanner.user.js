@@ -941,11 +941,13 @@ function wrapper(plugin_info) {
 			if (guid.selectedPortalGuid) {
 				lastPortalGuid = guid;
 
-				p = window.portals[guid.selectedPortalGuid];
+				const selectedPortal = window.portals[guid.selectedPortalGuid];
 				const calcMethod = calculationMethods[settings.calculationMethod];
-				if (p) {
-					const coord = new LatLng(p._latlng.lat, p._latlng.lng);
-					portalDroneIndicator = L.circle(coord, calcMethod["radius"],
+				if (selectedPortal) {
+					const coord = new LatLng(selectedPortal._latlng.lat, selectedPortal._latlng.lng);
+					portalDroneIndicator = L.circle(
+						coord,
+						calcMethod["radius"],
 						{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false }
 					)
 					dGridLayerGroup.addLayer(portalDroneIndicator);
