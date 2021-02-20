@@ -1006,7 +1006,7 @@ function wrapper(plugin_info) {
 
 			for (let n = 0; n < neighbors.length; n++) {
 				const nStr = neighbors[n].toString();
-				if (isCellinRange(neighbors[n], centerPoint)) {
+				if (isCellInRange(neighbors[n], centerPoint)) {
 					if (!seenCells[nStr]) {
 						seenCells[nStr] = true;
 						cellsToDraw.push(neighbors[n]);
@@ -1093,7 +1093,7 @@ function wrapper(plugin_info) {
 		return region;
 	}
 
-	function isCellinRange(cell, centerLatLng) {
+	function isCellInRange(cell, centerLatLng) {
 		const corners = cell.getCornerLatLngs();
 		for (let i = 0; i < corners.length; i++) {
 			if (haversine(corners[i].lat, corners[i].lng, centerLatLng.lat, centerLatLng.lng) < calculationMethods[settings.calculationMethod]["radius"]) {
