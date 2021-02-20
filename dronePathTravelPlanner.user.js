@@ -1066,7 +1066,7 @@ function wrapper(plugin_info) {
 		const centerPointCell = S2.S2Cell.FromLatLng(getLatLngPoint(centerPoint), gridSize);
 
 		portalsInRange.forEach((portal) => {
-			const portalPoint = new LatLng(portal._latlng.lat, portal._latlng.lng);
+			const portalPoint = portal.getLatLng();
 			if (isOneWayJump(centerPoint, centerPointCell, portalPoint, gridSize, radius)) {
 				dGridLayerGroup.addLayer(L.circleMarker(portalPoint, { radius: 15, fill: true, color: 'red', weight: 5, interactive: false, clickable: false }));
 			}
