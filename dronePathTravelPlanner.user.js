@@ -947,23 +947,10 @@ function wrapper(plugin_info) {
 		const selectedPortal = window.portals[guid.selectedPortalGuid];
 		const calcMethod = calculationMethods[settings.calculationMethod];
 		if (selectedPortal) {
-			const coord = new LatLng(selectedPortal._latlng.lat, selectedPortal._latlng.lng);
-			portalDroneIndicator = L.circle(
-				coord,
-				calcMethod["radius"],
-				{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false }
-			)
-			dGridLayerGroup.addLayer(portalDroneIndicator);
-			console.log(settings.keyRange);
-			if (settings.keyRange) {
-				portalDroneIndicatorKey = L.circle(coord, Number(settings.keyRangeDist),
-				{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false });
-				dGridLayerGroup.addLayer(portalDroneIndicatorKey);
-			}
-
 			const zoom = map.getZoom();
 
 			if (zoom > 8) {
+				const coord = selectedPortal.getLatLng();
 				return updateMapGrid(coord, calcMethod.gridSize, calcMethod.radius)
 			}
 		}
@@ -973,18 +960,32 @@ function wrapper(plugin_info) {
 		Object.values(cellsToDraw).forEach(function (cell){
 			dGridLayerGroup.addLayer(drawCell(cell, settings.gridColor, settings.gridWidth));
 		});
-		if (!droneLayer.hasLayer(dGridLayerGroup)) {
-			droneLayer.addLayer(dGridLayerGroup);
-		}
 	}
 
 	function updateMapGrid(centerLatLng, gridSize, radius) {
+		dGridLayerGroup.clearLayers();
+
+		portalDroneIndicator = L.circle(
+			centerLatLng,
+			radius,
+			{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false }
+		)
+		dGridLayerGroup.addLayer(portalDroneIndicator);
+		if (settings.keyRange) {
+			portalDroneIndicatorKey = L.circle(centerLatLng, Number(settings.keyRangeDist),
+				{ fill: false, color: settings.circleColor, weight: settings.circleWidth, interactive: false });
+			dGridLayerGroup.addLayer(portalDroneIndicatorKey);
+		}
+
 		const cellsInRange = determineCellGridInRange(centerLatLng, gridSize, radius);
 		const portalsInRange = getPortalsInRange(cellsInRange, gridSize)
 		drawGrid(cellsInRange)
 		highlightPortalsInRange(portalsInRange);
 		if (settings.showOneWay) {
 			highlightOneWayJumps(centerLatLng, portalsInRange, gridSize, radius);
+		}
+		if (!droneLayer.hasLayer(dGridLayerGroup)) {
+			droneLayer.addLayer(dGridLayerGroup);
 		}
 	}
 
