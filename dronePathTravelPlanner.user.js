@@ -2,7 +2,7 @@
 // @id           dronePathTravelPlanner
 // @name         IITC Plugin: Drone Travel Path Planner
 // @category     Layer
-// @version      0.16.2
+// @version      0.16.3
 // @namespace	   https://github.com/tehstone/IngressDronePath
 // @downloadURL	 https://github.com/tehstone/IngressDronePath/raw/master/dronePathTravelPlanner.user.js
 // @homepageURL	 https://github.com/tehstone/IngressDronePath
@@ -71,7 +71,6 @@ function wrapper(plugin_info) {
 	let pathfinderSourcePortalGuid
 	let pathfinderTargetPortalGuid
 
-	let map = window.map
 	const calculationMethods = {
 		"500/16": {"radius": 500, "gridSize": 16},
 		"570/17": {"radius": 570, "gridSize": 17}
@@ -961,7 +960,7 @@ function wrapper(plugin_info) {
 		const selectedPortal = window.portals[guid.selectedPortalGuid];
 		const calcMethod = calculationMethods[settings.calculationMethod];
 		if (selectedPortal) {
-			const zoom = map.getZoom();
+			const zoom = window.map.getZoom();
 
 			if (zoom > 8) {
 				const coord = selectedPortal.getLatLng();
@@ -1249,7 +1248,7 @@ function wrapper(plugin_info) {
 	}
 
 	function portalMarkerScale() {
-		const zoom = map.getZoom();
+		const zoom = window.map.getZoom()
 		if (L.Browser.mobile)
 			return zoom >= 16 ? 1.5 : zoom >= 14 ? 1.2 : zoom >= 11 ? 1.0 : zoom >= 8 ? 0.65 : 0.5;
 		else
@@ -1633,7 +1632,7 @@ function wrapper(plugin_info) {
 		control.className = "leaflet-control-drone-pathfinder leaflet-draw leaflet-control";
 		control.appendChild(section);
 
-		map._controlCorners.topleft.appendChild(control)
+		window.map._controlCorners.topleft.appendChild(control)
 	}
 
 	setup.info = plugin_info; //add the script info data to the function as a property
