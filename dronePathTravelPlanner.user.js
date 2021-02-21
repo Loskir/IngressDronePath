@@ -2,12 +2,12 @@
 // @id dronePathTravelPlanner
 // @name IITC Plugin: Drone Travel Path Planner
 // @category Tweaks
-// @version 0.15.5
+// @version 0.16.0
 // @namespace	https://github.com/tehstone/IngressDronePath
 // @downloadURL	https://github.com/tehstone/IngressDronePath/raw/master/dronePathTravelPlanner.user.js
 // @homepageURL	https://github.com/tehstone/IngressDronePath
 // @description Shows drone travel range from selected portal
-// @author tehstone
+// @author tehstone, Loskir
 // @include		https://intel.ingress.com/*
 // @match		https://intel.ingress.com/*
 // @grant			none
@@ -69,6 +69,16 @@ function wrapper(plugin_info) {
 	let routeLayerGroup;
 	let routeLayers = {};
 	let lastPortalGuid = null;
+
+	let pathfinderLayer
+	let pathfinderBaseLayerGroup
+	let pathfinderHighlightIncomingLayer
+	let pathfinderHighlightOutgoingLayer
+
+	let pathfinderSavedPath
+
+	let pathfinderSourcePortalGuid
+	let pathfinderTargetPortalGuid
 
 	map = window.map;
 	const calculationMethods = {
@@ -466,12 +476,25 @@ function wrapper(plugin_info) {
 			"portalSelected",
 			window.drawDroneRange
 		);
+		window.addHook(
+			"portalSelected",
+			thisPlugin.highlightPathfinderRoutesOnSelect
+		);
 
 		window.addHook('portalSelected', thisPlugin.addToPortalDetails);
 
 		droneLayer = L.layerGroup();
 		window.addLayerGroup('Drone Grid', droneLayer, true);
 		dGridLayerGroup = L.layerGroup();
+
+		pathfinderLayer = L.layerGroup();
+		window.addLayerGroup('Drone Pathfinder Graph', pathfinderLayer, true);
+		pathfinderBaseLayerGroup = L.layerGroup()
+		pathfinderHighlightIncomingLayer = L.layerGroup()
+		window.addLayerGroup('Drone Pathfinder Highlight (incoming)', pathfinderHighlightIncomingLayer, true);
+		pathfinderHighlightOutgoingLayer = L.layerGroup()
+		window.addLayerGroup('Drone Pathfinder Highlight (outgoing)', pathfinderHighlightOutgoingLayer, true);
+		pathfinderLayer.addLayer(pathfinderBaseLayerGroup)
 
 		routeLayerGroup = L.featureGroup();
 		window.addLayerGroup('Drone Route', routeLayerGroup, true);
@@ -490,6 +513,7 @@ function wrapper(plugin_info) {
 		buttonDrone.addEventListener("click", showActionsDialog);
 		toolbox.appendChild(buttonDrone);
 		thisPlugin.setupCSS();
+		thisPlugin.setupPathfinderControls()
 
 		thisPlugin.addAllMarkers();
 	}
@@ -988,6 +1012,161 @@ function wrapper(plugin_info) {
 		}
 	}
 
+	thisPlugin.pathfinderClearLayers = function () {
+		pathfinderBaseLayerGroup.clearLayers()
+		thisPlugin.pathfinderClearHighlightLayers()
+	}
+	thisPlugin.pathfinderClearHighlightLayers = function () {
+		pathfinderHighlightOutgoingLayer.clearLayers()
+		pathfinderHighlightIncomingLayer.clearLayers()
+	}
+
+	thisPlugin.drawPathfinder = function (infos, targetPortalGuid) {
+		thisPlugin.pathfinderClearLayers()
+
+		let isDrawn = new Set()
+		let drawQueue = [targetPortalGuid]
+		while (drawQueue.length > 0) {
+			const guid = drawQueue.shift()
+			if (isDrawn.has(guid)) {
+				continue
+			}
+			const info = infos[guid]
+			isDrawn.add(guid)
+			for (const pfg of info.previousFastestGuids) {
+				pathfinderBaseLayerGroup.addLayer(L.polyline([
+					window.portals[guid].getLatLng(),
+					window.portals[pfg].getLatLng(),
+				], {fill: false, color: 'black', opacity: 0.1, weight: 1, clickable: false, interactive: false}))
+				drawQueue.push(pfg)
+			}
+		}
+		thisPlugin.highlightPathfinderRoutes(selectedPortal)
+	}
+
+	thisPlugin.runPathfinder = (sourcePortalGuid, targetPortalGuid) => {
+		console.log('graph')
+		const {gridSize, radius} = calculationMethods[settings.calculationMethod]
+
+		let infos = {}
+
+		for (const guid of Object.keys(window.portals)) {
+			infos[guid] = {
+				score: 1e9,
+				isVisited: false,
+				previousFastestGuids: [],
+				nextFastestGuids: [],
+				isOnFastestPath: false,
+			}
+		}
+		infos[sourcePortalGuid].score = 0
+
+		if (!infos[targetPortalGuid] || !window.portals[targetPortalGuid]) {
+			throw new Error('Target portal is not loaded')
+		}
+
+		const totalPortalCount = Object.keys(window.portals).length
+		let processedPortalCount = 0
+
+		while (true) {
+			let entries = Object.entries(infos)
+			let minIndex = -1
+			for (let i = 1; i < entries.length; ++i) {
+				if (!entries[i][1].isVisited && (minIndex === -1 || entries[i][1].score < entries[minIndex][1].score)) {
+					minIndex = i
+				}
+			}
+			if (minIndex === -1) {
+				break
+			}
+			const currentGuid = entries[minIndex][0]
+			const currentPortal = window.portals[currentGuid]
+			const currentInfo = infos[currentGuid]
+			if (currentInfo.score + 1 > infos[targetPortalGuid].score) {
+				currentInfo.isVisited = true
+				continue
+			}
+			const cellsInRange = determineCellGridInRange(currentPortal.getLatLng(), gridSize, radius);
+			const portalsInRange = getPortalsInRange(cellsInRange, gridSize)
+			for (const inRangePortal of portalsInRange) {
+				const info = infos[inRangePortal.options.guid]
+				if (info.isVisited) {
+					continue
+				}
+				if (info.score > currentInfo.score + 1) {
+					info.score = currentInfo.score + 1
+					info.previousFastestGuids = [currentGuid]
+				} else if (info.score === currentInfo.score + 1) {
+					info.previousFastestGuids.push(currentGuid)
+				}
+			}
+			currentInfo.isVisited = true
+			processedPortalCount++
+			console.log(`pathfinder: done ${processedPortalCount}/${totalPortalCount}`)
+		}
+
+		let isDrawn = new Set()
+		let drawQueue = [targetPortalGuid]
+		while (drawQueue.length > 0) {
+			const guid = drawQueue.shift()
+			if (isDrawn.has(guid)) {
+				continue
+			}
+			isDrawn.add(guid)
+			if (!infos[guid]) {
+				continue
+			}
+			infos[guid].isOnFastestPath = true
+			infos[guid].latLng = window.portals[guid].getLatLng()
+			for (const pfg of infos[guid].previousFastestGuids) {
+				infos[pfg].nextFastestGuids.push(guid)
+				drawQueue.push(pfg)
+			}
+		}
+
+		return infos
+	}
+
+	thisPlugin.runAndDrawPathfinder = (sourcePortalGuid, targetPortalGuid) => {
+		const infos = thisPlugin.runPathfinder(sourcePortalGuid, targetPortalGuid)
+		pathfinderSavedPath = infos
+		thisPlugin.drawPathfinder(infos, targetPortalGuid)
+		return infos
+	}
+
+	thisPlugin.highlightPathfinderRoutes = function (guid) {
+		thisPlugin.pathfinderClearHighlightLayers()
+		if (!pathfinderSavedPath) {
+			return
+		}
+		const info = pathfinderSavedPath[guid]
+		if (!info) {
+			return
+		}
+		if (!info.isOnFastestPath) {
+			return
+		}
+ 		for (const pfg of info.nextFastestGuids) {
+			pathfinderHighlightOutgoingLayer.addLayer(L.polyline([
+				pathfinderSavedPath[guid].latLng,
+				pathfinderSavedPath[pfg].latLng,
+			], {fill: false, color: 'red', opacity: 0.8, weight: 2, clickable: false, interactive: false}))
+		}
+		for (const pfg of info.previousFastestGuids) {
+			pathfinderHighlightIncomingLayer.addLayer(L.polyline([
+				pathfinderSavedPath[guid].latLng,
+				pathfinderSavedPath[pfg].latLng,
+			], {fill: false, color: 'blue', opacity: 0.8, weight: 2, clickable: false, interactive: false}))
+		}
+	}
+	thisPlugin.highlightPathfinderRoutesOnSelect = function ({selectedPortalGuid}) {
+		thisPlugin.pathfinderClearHighlightLayers()
+		if (!selectedPortalGuid) {
+			return
+		}
+		return thisPlugin.highlightPathfinderRoutes(selectedPortalGuid)
+	}
+
 	function determineCellGridInRange(centerPoint, gridLevel, radius) {
 		const seenCells = {};
 		const cellsToDraw = [];
@@ -1366,6 +1545,104 @@ function wrapper(plugin_info) {
 			display:inline-block;
 		}
 		`).appendTo('head');
+	}
+
+	thisPlugin.setupPathfinderControls = function () {
+		$('<style>').prop('type', 'text/css')
+			.html('.leaflet-draw-actions-drone-pathfinder.active{display: block;}.leaflet-control-drone-pathfinder a.leaflet-drone-pathfinder-edit {background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCI+Cgk8ZyBzdHlsZT0iZmlsbDojMDAwMDAwO2ZpbGwtb3BhY2l0eTowLjQ7c3Ryb2tlOm5vbmUiPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSw2IHoiLz4KCQk8cGF0aCBkPSJNIDYsMjQgMjQsMjQgMTUsMTIgeiIvPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSwxOCB6Ii8+Cgk8L2c+Cjwvc3ZnPgo=");}')
+			.appendTo('head');
+		$('<style>').prop('type', 'text/css')
+			.html('.drone-pathfinder.highlighted{background-color:#008902}')
+			.appendTo('head');
+
+		let actions
+		let sourcePortalLink
+		let targetPortalLink
+
+		button = document.createElement("a");
+		button.className = "leaflet-drone-pathfinder-edit";
+		button.addEventListener("click", () => {
+			actions.classList.toggle('active')
+		}, false);
+		button.title = 'Drone pathfinder';
+
+		const toolbar = document.createElement("div");
+		toolbar.className = "leaflet-bar";
+		toolbar.appendChild(button);
+
+		const clearLink = document.createElement("a");
+		clearLink.innerText = "X";
+		clearLink.title = 'Clear selected portals and graph';
+		clearLink.addEventListener("click", () => {
+			pathfinderSavedPath = false
+			pathfinderSourcePortalGuid = false
+			pathfinderTargetPortalGuid = false
+			sourcePortalLink.classList.remove('highlighted')
+			targetPortalLink.classList.remove('highlighted')
+			thisPlugin.pathfinderClearLayers()
+		}, false);
+		const clearLi = document.createElement("li");
+		clearLi.appendChild(clearLink);
+
+		sourcePortalLink = document.createElement("a");
+		sourcePortalLink.className = "drone-pathfinder";
+		sourcePortalLink.innerText = "from";
+		sourcePortalLink.title = 'Select source portal';
+		sourcePortalLink.addEventListener("click", () => {
+			pathfinderSourcePortalGuid = selectedPortal
+			if (pathfinderSourcePortalGuid) {
+				sourcePortalLink.classList.add('highlighted')
+			}
+		}, false);
+		const sourcePortalLi = document.createElement("li");
+		sourcePortalLi.appendChild(sourcePortalLink);
+
+		targetPortalLink = document.createElement("a");
+		targetPortalLink.className = "drone-pathfinder";
+		targetPortalLink.innerText = "to";
+		targetPortalLink.title = 'Select target portal';
+		targetPortalLink.addEventListener("click", () => {
+			pathfinderTargetPortalGuid = selectedPortal
+			if (pathfinderTargetPortalGuid) {
+				targetPortalLink.classList.add('highlighted')
+			}
+		}, false);
+		const targetPortalLi = document.createElement("li");
+		targetPortalLi.appendChild(targetPortalLink);
+
+		const calculateLink = document.createElement('a')
+		calculateLink.innerText = 'calculate!'
+		calculateLink.title = 'Run the pathfinder'
+		calculateLink.addEventListener("click", async () => {
+			if (!pathfinderSourcePortalGuid || !pathfinderTargetPortalGuid) {
+				return alert('Please select source and target portals', false, () => {})
+			}
+			calculateLink.innerText = 'calculating...'
+			setTimeout(() => {
+				thisPlugin.runAndDrawPathfinder(pathfinderSourcePortalGuid, pathfinderTargetPortalGuid)
+				calculateLink.innerText = 'calculate!'
+			}, 5)
+		}, false);
+		const calculateLi = document.createElement("li");
+		calculateLi.appendChild(calculateLink);
+
+		actions = document.createElement("ul");
+		actions.className = "leaflet-draw-actions leaflet-draw-actions-top leaflet-draw-actions-drone-pathfinder";
+		actions.appendChild(clearLi);
+		actions.appendChild(sourcePortalLi);
+		actions.appendChild(targetPortalLi);
+		actions.appendChild(calculateLi);
+
+		const section = document.createElement("div");
+		section.className = "leaflet-draw-section";
+		section.appendChild(toolbar);
+		section.appendChild(actions);
+
+		const control = document.createElement("div");
+		control.className = "leaflet-control-drone-pathfinder leaflet-draw leaflet-control";
+		control.appendChild(section);
+
+		map._controlCorners.topleft.appendChild(control)
 	}
 
 	setup.info = plugin_info; //add the script info data to the function as a property
