@@ -1,16 +1,17 @@
 // ==UserScript==
-// @id dronePathTravelPlanner
-// @name IITC Plugin: Drone Travel Path Planner
-// @category Tweaks
-// @version 0.16.0
-// @namespace	https://github.com/tehstone/IngressDronePath
-// @downloadURL	https://github.com/tehstone/IngressDronePath/raw/master/dronePathTravelPlanner.user.js
-// @homepageURL	https://github.com/tehstone/IngressDronePath
-// @description Shows drone travel range from selected portal
-// @author tehstone, Loskir
-// @include		https://intel.ingress.com/*
-// @match		https://intel.ingress.com/*
-// @grant			none
+// @id           dronePathTravelPlanner
+// @name         IITC Plugin: Drone Travel Path Planner
+// @category     Layer
+// @version      0.16.1
+// @namespace	   https://github.com/tehstone/IngressDronePath
+// @downloadURL	 https://github.com/tehstone/IngressDronePath/raw/master/dronePathTravelPlanner.user.js
+// @homepageURL	 https://github.com/tehstone/IngressDronePath
+// @description  Shows drone travel range from selected portal
+// @author       tehstone
+// @collaborator Loskir
+// @include		   https://intel.ingress.com/*
+// @match		     https://intel.ingress.com/*
+// @grant			   none
 // ==/UserScript==
 
 /* globals dialog */
