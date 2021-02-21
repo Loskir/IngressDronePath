@@ -2,7 +2,7 @@
 // @id           dronePathTravelPlanner
 // @name         IITC Plugin: Drone Travel Path Planner
 // @category     Layer
-// @version      0.16.1
+// @version      0.16.2
 // @namespace	   https://github.com/tehstone/IngressDronePath
 // @downloadURL	 https://github.com/tehstone/IngressDronePath/raw/master/dronePathTravelPlanner.user.js
 // @homepageURL	 https://github.com/tehstone/IngressDronePath
@@ -53,10 +53,10 @@ function wrapper(plugin_info) {
 
 	let routePortals = {};
 	let savedRoutes = {};
-	window.portalDroneIndicator	= null;
-	window.portalDroneIndicatorKey = null;
-	droneLayer = null;
-	dGridLayerGroup = null;
+	let portalDroneIndicator	= null;
+	let portalDroneIndicatorKey = null;
+	let droneLayer = null;
+	let dGridLayerGroup = null;
 	let routeLayerGroup;
 	let routeLayers = {};
 	let lastPortalGuid = null;
@@ -71,7 +71,7 @@ function wrapper(plugin_info) {
 	let pathfinderSourcePortalGuid
 	let pathfinderTargetPortalGuid
 
-	map = window.map;
+	let map = window.map
 	const calculationMethods = {
 		"500/16": {"radius": 500, "gridSize": 16},
 		"570/17": {"radius": 570, "gridSize": 17}
@@ -95,7 +95,7 @@ function wrapper(plugin_info) {
 		createThrottledTimer("saveSettings", function () {
 			localStorage[KEY_SETTINGS] = JSON.stringify(settings);
 		});
-		drawDroneRange(lastPortalGuid);
+		thisPlugin.drawDroneRange(lastPortalGuid);
 	}
 
 	thisPlugin.loadSettings = function() {
@@ -128,7 +128,7 @@ function wrapper(plugin_info) {
 		}
 	}
 
-	window.resetSettings = function() {
+	thisPlugin.resetSettings = function() {
 		settings = JSON.parse(JSON.stringify(defaultSettings));
 		showSettingsDialog();
 	}
@@ -465,7 +465,7 @@ function wrapper(plugin_info) {
 
 		window.addHook(
 			"portalSelected",
-			window.drawDroneRange
+			thisPlugin.drawDroneRange
 		);
 		window.addHook(
 			"portalSelected",
@@ -832,7 +832,7 @@ function wrapper(plugin_info) {
 					 <p>
 					 Please note that neither of these methods are completely accurate. More investigation into the specifics of which portals will be in range is still needed.
 					 </p>
-					 <a onclick="window.resetSettings();return false;" title="Restores settings to default state">Reset to Defaults</a>
+					 <a onclick="window.plugin.DronePathTravelPlanner.resetSettings();return false;" title="Restores settings to default state">Reset to Defaults</a>
 					`;
 
 		const width = Math.min(screen.availWidth, 420);
@@ -938,10 +938,10 @@ function wrapper(plugin_info) {
 			html: content,
 			title: 'Drone Grid Actions'
 		});
-	};
+	}
 
 
-	window.drawDroneRange = function (guid) {
+	thisPlugin.drawDroneRange = function (guid) {
 		portalDroneIndicator = null;
 		portalDroneIndicatorKey = null;
 		dGridLayerGroup.clearLayers();
