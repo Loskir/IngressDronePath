@@ -516,10 +516,10 @@ function wrapper(plugin_info) {
 	}
 
 	thisPlugin.updateStarPortal = function () {
-		$('.droneRoute').removeClass('favorite');
-		const guid = window.selectedPortal;
-		if (routePortals[guid]) {
-			$('.droneRoute').addClass('favorite');
+		const droneRouteEl = $('.droneRoute')
+		droneRouteEl.removeClass('favorite');
+		if (routePortals[window.selectedPortal]) {
+			droneRouteEl.addClass('favorite');
 		}
 	}
 
@@ -615,7 +615,7 @@ function wrapper(plugin_info) {
 
 	thisPlugin.resetCurrentRoute = function(confirmReset=true) {
 		if (confirmReset) {
-			if (confirm('Current Route will be deleted. Are you sure?', '') == false) {
+			if (!confirm('Current Route will be deleted. Are you sure?')) {
 				return;
 			}
 		}
@@ -643,12 +643,11 @@ function wrapper(plugin_info) {
 		const today  = new Date();
 		const routeName = prompt("Please provide a name for this route", "New Route " + today.toLocaleString());
 		const routeId = uuidv4();
-		const routeToSave = {
+		savedRoutes[routeId] = {
 			id: routeId,
 			name: routeName,
 			portals: routePortals
 		}
-		savedRoutes[routeId] = routeToSave;
 		thisPlugin.saveRoutes();
 	};
 
@@ -1022,9 +1021,14 @@ function wrapper(plugin_info) {
 
 		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
 		// from the other cell, or be off screen so we don't care
-		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: opacity, weight: weight, clickable: false, interactive: false});
-
-		return region;
+		return L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {
+			fill: false,
+			color: color,
+			opacity: opacity,
+			weight: weight,
+			clickable: false,
+			interactive: false
+		});
 	}
 
 	function getPortalsInRange(cellsInRange, gridSize) {
@@ -1129,12 +1133,10 @@ function wrapper(plugin_info) {
 	}
 
 	function getLatLngPoint(data) {
-		const result = {
+		return {
 			lat: typeof data.lat == 'function' ? data.lat() : data.lat,
 			lng: typeof data.lng == 'function' ? data.lng() : data.lng
-		};
-
-		return result;
+		}
 	}
 
 	/**
