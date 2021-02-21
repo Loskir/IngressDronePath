@@ -19,9 +19,8 @@
 // into the document. Because of this, normal closure rules
 // do not apply here.
 function wrapper(plugin_info) {
-	// Make sure that window.plugin exists. IITC defines it as a no-op function,
-	// and other plugins assume the same.
-	if (typeof window.plugin !== "function") window.plugin = function () {};
+	// ensure plugin framework is there, even if iitc is not yet loaded
+	if(typeof window.plugin !== 'function') window.plugin = function() {};
 
 	const KEY_SETTINGS = "plugin-drone-path-planner-settings";
 	const KEY_ROUTES = "plugin-drone-path-planner-routes"
@@ -31,15 +30,6 @@ function wrapper(plugin_info) {
 	window.plugin.DronePathTravelPlanner = function () {};
 
 	const thisPlugin = window.plugin.DronePathTravelPlanner;
-
-	// Name of the IITC build for first-party plugins
-	plugin_info.buildName = "DronePathTravelPlanner";
-
-	// Datetime-derived version of the plugin
-	plugin_info.dateTimeVersion = "20190101000000";
-
-	// ID/name of the plugin
-	plugin_info.pluginId = "dronepathtravelplanner";
 
 	const TIMERS = {};
 	function createThrottledTimer(name, callback, ms) {
@@ -1646,35 +1636,14 @@ function wrapper(plugin_info) {
 	}
 
 	setup.info = plugin_info; //add the script info data to the function as a property
+	if(!window.bootPlugins) window.bootPlugins = [];
+	window.bootPlugins.push(setup);
 	// if IITC has already booted, immediately run the 'setup' function
-	if (window.iitcLoaded) {
-		setup();
-		} else {
-			if (!window.bootPlugins) {
-				window.bootPlugins = [];
-			}
-		window.bootPlugins.push(setup);
-	}
-}
-
-
-(function () {
-	const plugin_info = {};
-	if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
-		plugin_info.script = {
-			version: GM_info.script.version,
-			name: GM_info.script.name,
-			description: GM_info.script.description
-		};
-	}
-	// Greasemonkey. It will be quite hard to debug
-	if (typeof unsafeWindow != 'undefined' || typeof GM_info == 'undefined' || GM_info.scriptHandler != 'Tampermonkey') {
-	// inject code into site context
-		const script = document.createElement('script');
-		script.appendChild(document.createTextNode('(' + wrapper + ')(' + JSON.stringify(plugin_info) + ');'));
-		(document.body || document.head || document.documentElement).appendChild(script);
-	} else {
-		// Tampermonkey, run code directly
-		wrapper(plugin_info);
-	}
-})();
+	if(window.iitcLoaded && typeof setup === 'function') setup();
+} // wrapper end
+// inject code into site context
+var script = document.createElement('script');
+var info = {};
+if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = { version: GM_info.script.version, name: GM_info.script.name, description: GM_info.script.description };
+script.appendChild(document.createTextNode('('+ wrapper +')('+JSON.stringify(info)+');'));
+(document.body || document.head || document.documentElement).appendChild(script);
