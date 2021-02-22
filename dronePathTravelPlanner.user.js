@@ -2,7 +2,7 @@
 // @id           dronePathTravelPlanner
 // @name         IITC Plugin: Drone Travel Path Planner
 // @category     Layer
-// @version      0.16.4
+// @version      0.16.5
 // @namespace	   https://github.com/tehstone/IngressDronePath
 // @downloadURL	 https://github.com/tehstone/IngressDronePath/raw/master/dronePathTravelPlanner.user.js
 // @homepageURL	 https://github.com/tehstone/IngressDronePath
@@ -1538,13 +1538,103 @@ function wrapper(plugin_info) {
 	}
 
 	thisPlugin.setupPathfinderControls = function () {
+		// actions styles are from draw tools
 		$('<style>').prop('type', 'text/css')
 			.html(`
-				.leaflet-drone-pathfinder-actions.active{display: block;}
 				.leaflet-control-drone-pathfinder a.leaflet-drone-pathfinder-edit {background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCI+Cgk8ZyBzdHlsZT0iZmlsbDojMDAwMDAwO2ZpbGwtb3BhY2l0eTowLjQ7c3Ryb2tlOm5vbmUiPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSw2IHoiLz4KCQk8cGF0aCBkPSJNIDYsMjQgMjQsMjQgMTUsMTIgeiIvPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSwxOCB6Ii8+Cgk8L2c+Cjwvc3ZnPgo=");}
+				.leaflet-control-drone-pathfinder a {
+					display: block;
+				}
 				.drone-pathfinder.highlighted{background-color:#008902}
-				.leaflet-drone-pathfinder-actions{display: block; list-style: none; margin: 0; padding: 0; position: absolute; left: 26px; top: 0; white-space: nowrap}
-				.leaflet-drone-pathfinder-actions-top{margin-top: 1px}
+				.drone-pathfinder.highlighted:hover{background-color:#5ecb61}
+				.leaflet-drone-pathfinder-actions.active{display: block;}
+				.leaflet-drone-pathfinder-actions {
+					display: none;
+					list-style: none;
+					margin: 0;
+					padding: 0;
+					position: absolute;
+					left: 26px; /* leaflet-draw-toolbar.left + leaflet-draw-toolbar.width */
+					top: 0;
+					white-space: nowrap;
+				}
+				
+				.leaflet-touch .leaflet-drone-pathfinder-actions {
+					left: 32px;
+				}
+				
+				.leaflet-right .leaflet-drone-pathfinder-actions {
+					right: 26px;
+					left: auto;
+				}
+				
+				.leaflet-touch .leaflet-right .leaflet-drone-pathfinder-actions {
+					right: 32px;
+					left: auto;
+				}
+				
+				.leaflet-drone-pathfinder-actions li {
+					display: inline-block;
+				}
+				
+				.leaflet-drone-pathfinder-actions li:first-child a {
+					border-left: none;
+				}
+				
+				.leaflet-drone-pathfinder-actions li:last-child a {
+					-webkit-border-radius: 0 4px 4px 0;
+					border-radius: 0 4px 4px 0;
+				}
+				
+				.leaflet-right .leaflet-drone-pathfinder-actions li:last-child a {
+					-webkit-border-radius: 0;
+					border-radius: 0;
+				}
+				
+				.leaflet-right .leaflet-drone-pathfinder-actions li:first-child a {
+					-webkit-border-radius: 4px 0 0 4px;
+					border-radius: 4px 0 0 4px;
+				}
+				
+				.leaflet-drone-pathfinder-actions a {
+					background-color: #919187;
+					border-left: 1px solid #AAA;
+					color: #FFF;
+					font: 11px/19px "Helvetica Neue", Arial, Helvetica, sans-serif;
+					line-height: 28px;
+					text-decoration: none;
+					padding-left: 10px;
+					padding-right: 10px;
+					height: 28px;
+				}
+				
+				.leaflet-touch .leaflet-drone-pathfinder-actions a {
+					font-size: 12px;
+					line-height: 30px;
+					height: 30px;
+				}
+				
+				.leaflet-drone-pathfinder-actions-bottom {
+					margin-top: 0;
+				}
+				
+				.leaflet-drone-pathfinder-actions-top {
+					margin-top: 1px;
+				}
+				
+				.leaflet-drone-pathfinder-actions-top a, .leaflet-drone-pathfinder-actions-bottom a {
+					height: 27px;
+					line-height: 27px;
+				}
+				
+				.leaflet-drone-pathfinder-actions a:hover {
+					background-color: #A0A098;
+				}
+				
+				.leaflet-drone-pathfinder-actions-top.leaflet-drone-pathfinder-actions-bottom a {
+					height: 26px;
+					line-height: 26px;
+				}
 			`)
 			.appendTo('head');
 
