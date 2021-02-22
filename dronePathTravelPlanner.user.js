@@ -2,7 +2,7 @@
 // @id           dronePathTravelPlanner
 // @name         IITC Plugin: Drone Travel Path Planner
 // @category     Layer
-// @version      0.16.3
+// @version      0.16.4
 // @namespace	   https://github.com/tehstone/IngressDronePath
 // @downloadURL	 https://github.com/tehstone/IngressDronePath/raw/master/dronePathTravelPlanner.user.js
 // @homepageURL	 https://github.com/tehstone/IngressDronePath
@@ -1539,17 +1539,20 @@ function wrapper(plugin_info) {
 
 	thisPlugin.setupPathfinderControls = function () {
 		$('<style>').prop('type', 'text/css')
-			.html('.leaflet-draw-actions-drone-pathfinder.active{display: block;}.leaflet-control-drone-pathfinder a.leaflet-drone-pathfinder-edit {background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCI+Cgk8ZyBzdHlsZT0iZmlsbDojMDAwMDAwO2ZpbGwtb3BhY2l0eTowLjQ7c3Ryb2tlOm5vbmUiPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSw2IHoiLz4KCQk8cGF0aCBkPSJNIDYsMjQgMjQsMjQgMTUsMTIgeiIvPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSwxOCB6Ii8+Cgk8L2c+Cjwvc3ZnPgo=");}')
-			.appendTo('head');
-		$('<style>').prop('type', 'text/css')
-			.html('.drone-pathfinder.highlighted{background-color:#008902}')
+			.html(`
+				.leaflet-drone-pathfinder-actions.active{display: block;}
+				.leaflet-control-drone-pathfinder a.leaflet-drone-pathfinder-edit {background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCI+Cgk8ZyBzdHlsZT0iZmlsbDojMDAwMDAwO2ZpbGwtb3BhY2l0eTowLjQ7c3Ryb2tlOm5vbmUiPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSw2IHoiLz4KCQk8cGF0aCBkPSJNIDYsMjQgMjQsMjQgMTUsMTIgeiIvPgoJCTxwYXRoIGQ9Ik0gNiwyNCAyNCwyNCAxNSwxOCB6Ii8+Cgk8L2c+Cjwvc3ZnPgo=");}
+				.drone-pathfinder.highlighted{background-color:#008902}
+				.leaflet-drone-pathfinder-actions{display: block; list-style: none; margin: 0; padding: 0; position: absolute; left: 26px; top: 0; white-space: nowrap}
+				.leaflet-drone-pathfinder-actions-top{margin-top: 1px}
+			`)
 			.appendTo('head');
 
 		let actions
 		let sourcePortalLink
 		let targetPortalLink
 
-		button = document.createElement("a");
+		const button = document.createElement("a");
 		button.className = "leaflet-drone-pathfinder-edit";
 		button.addEventListener("click", () => {
 			actions.classList.toggle('active')
@@ -1617,20 +1620,16 @@ function wrapper(plugin_info) {
 		calculateLi.appendChild(calculateLink);
 
 		actions = document.createElement("ul");
-		actions.className = "leaflet-draw-actions leaflet-draw-actions-top leaflet-draw-actions-drone-pathfinder";
+		actions.className = "leaflet-drone-pathfinder-actions leaflet-drone-pathfinder-actions-top";
 		actions.appendChild(clearLi);
 		actions.appendChild(sourcePortalLi);
 		actions.appendChild(targetPortalLi);
 		actions.appendChild(calculateLi);
 
-		const section = document.createElement("div");
-		section.className = "leaflet-draw-section";
-		section.appendChild(toolbar);
-		section.appendChild(actions);
-
 		const control = document.createElement("div");
-		control.className = "leaflet-control-drone-pathfinder leaflet-draw leaflet-control";
-		control.appendChild(section);
+		control.className = "leaflet-control-drone-pathfinder leaflet-control";
+		control.appendChild(toolbar);
+		control.appendChild(actions);
 
 		window.map._controlCorners.topleft.appendChild(control)
 	}
